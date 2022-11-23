@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "simplifier"
+version = "0.1.0"
+description = "Text Simplification Game"
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.9.7"
+pygame = "^2.1.2"
+gym = "^0.26.2"
+openai = "^0.25.0"
+spacy = "^3.4.3"
+huggingface-hub = "^0.11.0"
+textstat = "^0.7.3"
+jsonlines = "^3.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
