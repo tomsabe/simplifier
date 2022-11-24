@@ -297,15 +297,14 @@ if __name__ == "__main__":
             sys.exit(0)
       #(now we are done with the "if" for 'final step')
 
-      #periodically sample batches and update network
-      if move % 32 == 0:
-        optimizer.zero_grad()
-        batch = agent._sample_buffer(HYPERS["batch_size"])
-        if len(batch)==HYPERS["batch_size"]:
-          loss_t = batch_loss(batch, net, tgt_net, device=device)
-          writer.add_scalar("losses/td_loss",loss_t.item(), move)
-          loss_t.backward()
-          optimizer.step()
+      #sample batches and update network
+      optimizer.zero_grad()
+      batch = agent._sample_buffer(HYPERS["batch_size"])
+      if len(batch)==HYPERS["batch_size"]:
+        loss_t = batch_loss(batch, net, tgt_net, device=device)
+        writer.add_scalar("losses/td_loss",loss_t.item(), move)
+        loss_t.backward()
+        optimizer.step()
 
       #periodically update the target network 
       if move % 128 == 0: 
