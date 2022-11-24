@@ -1,6 +1,6 @@
-# Less is More : RL Text Simplification
+# Multi-Step Text Simplification with Reinforcement Learning
 
-In this project we build a Text Simplification game that can be mastered by a Reinforcement Learning agent. The game player moves a word cursor left and right through a text, using keyboard commands to delete or simplify words or phrases. Each discrete simplifying action is executed by traditional NLP or large language model tools. When the player quits the game a final grammar correction is applied. The player's score is based on a combination of final text simplicity and semantic preservation vis-a-vis the original text. The game is built in PyGame. We use OpenAI Gym to define a custom reinforcement learning environment based on the game. Python and PyTorch are used to train an RL agent to master the game.   
+We built a Text Simplification game that can be mastered by a Reinforcement Learning agent. The game player moves a word cursor through a text, using keyboard commands to choose simplifying actions or word deletions. Simplifying actions are executed by traditional NLP or large language model tools. The player's score is based on a combination of final text simplicity and semantic preservation vis-a-vis the original text. We use OpenAI Gym to define a custom reinforcement learning environment based on the game. Python and PyTorch are used to train an RL agent to master the game. We use DQN RL policy.  
 
 ## The Game
 
@@ -49,7 +49,12 @@ Also: the "gyms" directory in this repo includes a custom Gym environment that m
 pip install -e gyms
 ```
 
-Remember that you will need to run this command again if you modify the python code contained in the gyms directory.
+The game also relies on Spacy for certain NLP functions. You will need to install Spacy English packages.
+
+```sh
+python3 -m spacy download en_core_web_sm
+python3 -m spacy download en
+```
 
 4. Create your own .env file
 Secrets (i.e., huggingface token, openai api key) are to be stored as environment variables.
@@ -61,8 +66,6 @@ Also: in my .env file I have included the shell code that is required to downloa
 Here is an example written in a way that is compatible with MacOS/zsh: 
 
 ```sh
-python3 -m spacy download en_core_web_sm
-python3 -m spacy download en
 export TOKENIZERS_PARALLELISM=False
 export HF_TOKEN='putyourhugginfacetokenhere'
 export OPENAI_API_KEY='putyouropenaiapikeyhere'

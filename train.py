@@ -20,7 +20,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from tensorboardX import SummaryWriter
+#from tensorboardX import SummaryWriter
 import rl_model
 import jsonlines
 import matplotlib.pyplot as plt
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     #else: Should I be Xavier initializing my networks? 
       #--> https://github.com/bentrevett/pytorch-rl/blob/master/1%20-%20Vanilla%20Policy%20Gradient%20(REINFORCE)%20%5BCartPole%5D.ipynb    
     #Start tensorboard
-    writer = SummaryWriter(comment="gyms/TextWorld-v0")
+#    writer = SummaryWriter(comment="gyms/TextWorld-v0")
     #Prepare for training loop
     agent = Agent(env)
     optimizer = optim.Adam(net.parameters(),lr=HYPERS['learning_rate'])
@@ -206,13 +206,13 @@ if __name__ == "__main__":
         print("%d: moves %d games, avg game score (last 100) %.3f, "
               "epsilon %.2f, speed %.2f seconds/game" % (
                 move, n_games, m_reward, epsilon, game_time))
-        writer.add_scalar("avg_score_100", m_reward, move)
-        writer.add_scalar("game_score", reward, move)
+#        writer.add_scalar("avg_score_100", m_reward, move)
+#        writer.add_scalar("game_score", reward, move)
         #If at least 100 games done:  
         if(n_games>100):
           #Check if average score (last 100 games) is a new record .. if so, save model
           if (best_m_reward is None) or (m_reward > best_m_reward):
-            torch.save(net.state_dict(),"TextWorld-avgscore_%.0f.dat" % m_reward)
+            torch.save(net.state_dict(),"model_save/TextWorld-avgscore_%.0f.dat" % m_reward)
             plt.plot(total_rewards, 'o-r')
             plt.ylabel('Reward')
             plt.savefig('TextWorld-avgscore_%.0f.pdf' % m_reward)
