@@ -1,0 +1,73 @@
+diff --git a/model_save/TextWorld-avgscore_6.dat b/model_save/TextWorld-avgscore_6.dat
+index 0f5a2ae..f483972 100644
+Binary files a/model_save/TextWorld-avgscore_6.dat and b/model_save/TextWorld-avgscore_6.dat differ
+diff --git a/model_save/TextWorld-avgscore_7.dat b/model_save/TextWorld-avgscore_7.dat
+index 34b7da5..c927c9e 100644
+Binary files a/model_save/TextWorld-avgscore_7.dat and b/model_save/TextWorld-avgscore_7.dat differ
+diff --git a/model_save/TextWorld-avgscore_8.dat b/model_save/TextWorld-avgscore_8.dat
+index 8a36358..ac0ac2f 100644
+Binary files a/model_save/TextWorld-avgscore_8.dat and b/model_save/TextWorld-avgscore_8.dat differ
+diff --git a/model_save/TextWorld-avgscore_9.dat b/model_save/TextWorld-avgscore_9.dat
+index 285ad81..f821126 100644
+Binary files a/model_save/TextWorld-avgscore_9.dat and b/model_save/TextWorld-avgscore_9.dat differ
+diff --git a/train.py b/train.py
+index 7965d1f..64b8381 100644
+--- a/train.py
++++ b/train.py
+@@ -12,6 +12,7 @@ Additional code and ideas adopted from cleanrl python project, dqn.py reference
+ # Test wandb and video capture
+ # Consider replacing replay buffer with stable baselines
+ #   (may make better use of GPU)
++# Add epsilon to parama; stop decr epslion at zero
+ 
+ import argparse
+ import os
+@@ -196,7 +197,7 @@ if __name__ == "__main__":
+             sync_tensorboard=True,
+             config=vars(args),
+             name=run_name,
+-            monitor_gym=True,
++#            monitor_gym=True,   relies on depricated method
+             save_code=True,
+         )
+     writer = SummaryWriter(f"runs/{run_name}")
+@@ -219,7 +220,7 @@ if __name__ == "__main__":
+     env = gym.wrappers.RecordEpisodeStatistics(env)
+     if args.capture_video:
+       env = gym.wrappers.RecordVideo(env,f"videos/{run_name}")
+-#    env.seed(args.seed)
++#    env.seed(args.seed) - appears to be outdated
+     env.action_space.seed(args.seed)
+     env.observation_space.seed(args.seed)
+ 
+@@ -275,11 +276,11 @@ if __name__ == "__main__":
+         print("%d: moves %d games, avg game score (last 100) %.3f, "
+               "epsilon %.2f, speed %.2f seconds/game" % (
+                 move, num_games, avg_game_reward, epsilon, game_time))
+-        writer.add_scalar("charts/final_reward", final_reward, move)
+-        writer.add_scalar("charts/epslion",epsilon,move)
++        writer.add_scalar("charts/final_reward", final_reward, num_games) #was move
++#        writer.add_scalar("charts/epslion",epsilon,move)
+         #If at least 100 games done:  
+         if(num_games>100):
+-          writer.add_scalar("charts/100_game_average", avg_game_reward, move)
++          writer.add_scalar("charts/100_game_average", avg_game_reward, num_games) #was move
+           #Check if average score (last 100 games) is a new record .. if so, save model
+           if (best_m_reward is None) or (avg_game_reward > best_m_reward):
+             torch.save(net.state_dict(),"model_save/TextWorld-avgscore_%.0f.dat" % avg_game_reward)
+@@ -303,6 +304,7 @@ if __name__ == "__main__":
+       if len(batch)==HYPERS["batch_size"]:
+         loss_t = batch_loss(batch, net, tgt_net, device=device)
+         writer.add_scalar("losses/td_loss",loss_t.item(), move)
++        writer.add_scalar("charts/epslion",epsilon,move)
+         loss_t.backward()
+         optimizer.step()
+ 
+@@ -311,5 +313,6 @@ if __name__ == "__main__":
+         tgt_net.load_state_dict(net.state_dict())
+ 
+       #decrease epslion
+-      epsilon += HYPERS['epsilon_decay']
++      if epsilon > 0:
++        epsilon += HYPERS['epsilon_decay']
+ 

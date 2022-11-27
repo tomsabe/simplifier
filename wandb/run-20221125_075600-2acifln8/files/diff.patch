@@ -1,0 +1,38 @@
+diff --git a/train.py b/train.py
+index 7965d1f..b7fae47 100644
+--- a/train.py
++++ b/train.py
+@@ -12,6 +12,7 @@ Additional code and ideas adopted from cleanrl python project, dqn.py reference
+ # Test wandb and video capture
+ # Consider replacing replay buffer with stable baselines
+ #   (may make better use of GPU)
++# Add epsilon to parama; stop decr epslion at zero
+ 
+ import argparse
+ import os
+@@ -196,7 +197,7 @@ if __name__ == "__main__":
+             sync_tensorboard=True,
+             config=vars(args),
+             name=run_name,
+-            monitor_gym=True,
++#            monitor_gym=True,   relies on depricated method
+             save_code=True,
+         )
+     writer = SummaryWriter(f"runs/{run_name}")
+@@ -219,7 +220,7 @@ if __name__ == "__main__":
+     env = gym.wrappers.RecordEpisodeStatistics(env)
+     if args.capture_video:
+       env = gym.wrappers.RecordVideo(env,f"videos/{run_name}")
+-#    env.seed(args.seed)
++#    env.seed(args.seed) - appears to be outdated
+     env.action_space.seed(args.seed)
+     env.observation_space.seed(args.seed)
+ 
+@@ -311,5 +312,6 @@ if __name__ == "__main__":
+         tgt_net.load_state_dict(net.state_dict())
+ 
+       #decrease epslion
+-      epsilon += HYPERS['epsilon_decay']
++      if epsilon > 0:
++        epsilon += HYPERS['epsilon_decay']
+ 

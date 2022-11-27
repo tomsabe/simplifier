@@ -276,11 +276,11 @@ if __name__ == "__main__":
         print("%d: moves %d games, avg game score (last 100) %.3f, "
               "epsilon %.2f, speed %.2f seconds/game" % (
                 move, num_games, avg_game_reward, epsilon, game_time))
-        writer.add_scalar("charts/final_reward", final_reward, num_games) #was move
-#        writer.add_scalar("charts/epslion",epsilon,move)
+        writer.add_scalar("charts/final_reward", final_reward, move)
+        writer.add_scalar("charts/epslion",epsilon,move)
         #If at least 100 games done:  
         if(num_games>100):
-          writer.add_scalar("charts/100_game_average", avg_game_reward, num_games) #was move
+          writer.add_scalar("charts/100_game_average", avg_game_reward, move)
           #Check if average score (last 100 games) is a new record .. if so, save model
           if (best_m_reward is None) or (avg_game_reward > best_m_reward):
             torch.save(net.state_dict(),"model_save/TextWorld-avgscore_%.0f.dat" % avg_game_reward)
@@ -304,7 +304,6 @@ if __name__ == "__main__":
       if len(batch)==HYPERS["batch_size"]:
         loss_t = batch_loss(batch, net, tgt_net, device=device)
         writer.add_scalar("losses/td_loss",loss_t.item(), move)
-        writer.add_scalar("charts/epslion",epsilon,move)
         loss_t.backward()
         optimizer.step()
 

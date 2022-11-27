@@ -1,0 +1,1 @@
+{"global_step": 7772, "_timestamp": 1669382457.31668, "charts/final_reward": 0.0, "charts/epslion": -9.999999747378752e-05, "_runtime": 1468.8818619251251, "_step": 7743, "losses/td_loss": 0.4445269703865051, "charts/100_game_average": 7.288099765777588, "_wandb": {"runtime": 1469}}

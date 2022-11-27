@@ -1,0 +1,39 @@
+{
+    "os": "macOS-13.0-arm64-arm-64bit",
+    "python": "3.9.13",
+    "heartbeatAt": "2022-11-25T12:56:28.798835",
+    "startedAt": "2022-11-25T12:56:28.422881",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--net",
+        "model_save/TextWorld-avgscore_9.dat",
+        "--track",
+        "True"
+    ],
+    "state": "running",
+    "program": "/Users/toms/GitHub/simplifier/train.py",
+    "codePath": "train.py",
+    "git": {
+        "remote": "https://github.com/tomsabe/simplifier.git",
+        "commit": "37fea687f3a0fcce92ba35ef88b897b9ac38daf0"
+    },
+    "email": "tom@xform.llc",
+    "root": "/Users/toms/GitHub/simplifier",
+    "host": "Toms-Air.fios-router.home",
+    "username": "toms",
+    "executable": "/Users/toms/GitHub/simplifier/venv/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "disk": {
+        "total": 460.4317207336426,
+        "used": 8.614448547363281
+    },
+    "gpuapple": {
+        "type": "arm",
+        "vendor": "Apple"
+    },
+    "memory": {
+        "total": 8.0
+    }
+}
