@@ -16,6 +16,8 @@ textstat
 # Keep looking at measures of simplicity : word length, sentence length
 
 import os
+import sys
+import copy
 import warnings
 import gym
 from gym import spaces
@@ -80,7 +82,8 @@ class TextWorldEnv(gym.Env):
             'S':3
         }
         #Read the game texts into a dataframe that is easily sampled:
-        self.originals = pd.read_json('gametexts.json')
+        self.originals = pd.read_json('gametexts.json',orient='index').transpose() #adjust the formating
+        self._item_number = 0 #only used if texts are to be read sequentially
         self.render_mode = render_mode
         self.window = None
         self.clock = None
@@ -324,11 +327,18 @@ class TextWorldEnv(gym.Env):
             print('Something went wrong with split and replace.\n')
         return
 
-    def reset(self, seed=None, options=None):
-#       super().reset(seed=seed) raised error, unexpected kwarg 'seed'
+    def reset(self, sequential=False):
         super().reset()
         # Pick a sentence to simplify
-        self._start_text = self.originals.sample()['original'].iloc[0]
+        if sequential:
+            try:
+                self._start_text = copy.deepcopy(self.originals.iloc[self._item_number].original) #needs to be a copy
+                self._item_number += 1
+            except:
+                print("End of game texts.\n")
+                sys.exit(0)
+        else: #pick a random selection
+            self._start_text = self.originals.sample()['original'].iloc[0]
         self._start_doc = NLP(self._start_text)
         self._start_emb = self._embedding(self._start_text,openai=True)
         #Initialize the word list and token list
