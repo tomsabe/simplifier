@@ -5,15 +5,12 @@ Credits:
 https://www.gymlibrary.dev/content/environment_creation/
 OpenAI GPT-3
 Spacy
-sentence-transformers/all-MiniLM-L6-v2 -  may not use
+sentence-transformers/all-MiniLM-L6-v2 (optional embedding)
 textstat
 """
 
 # ISSUES
-# Implement lookup thesaurus
-# Fine tune a sentence splitter
-# Study Asset Corpus for optimum simplicity measure
-# Keep looking at measures of simplicity : word length, sentence length
+# 
 
 import os
 import sys
@@ -29,7 +26,6 @@ import spacy
 import textstat
 import openai
 import torch
-#from gramformer import Gramformer
 from sentence_transformers import SentenceTransformer
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers.utils import logging
@@ -41,7 +37,6 @@ logging.set_verbosity_error() #suppress warnings
 NLP = spacy.load("en_core_web_sm")
 HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2',use_auth_token=HF_TOKEN)
-#GF = Gramformer(models=1,use_gpu=False)
 GRAMMAR = AutoModelForSequenceClassification.from_pretrained("tomsabe/autotrain-grammar-check-2154669454", use_auth_token=True)
 GRAMMAR_TOK = AutoTokenizer.from_pretrained("tomsabe/autotrain-grammar-check-2154669454", use_auth_token=True)
 SOFTMAX = torch.nn.Softmax(dim=1)
@@ -63,11 +58,11 @@ class TextWorldEnv(gym.Env):
         #Set PyGame width and height
         self.width=1920/2
         self.height=1080/2
-        #We have 5 state observations: 
+        #We have 7 state observations: 
         # token_len, lemma_len, token_#ancestors, span_len, simplicity, # times lex, # times split
         self.observation_space = spaces.MultiDiscrete([20,20,5,30,30,2,2])
         #We have 4 player actions: 
-        # (K)eep, (D)rop, (L)exical simplification, (S)yntactic simplification
+        # (K)eep, (D)rop, (L)exical simplification, (S)plit-and-Rephrase
         self.action_space = spaces.Discrete(4)
         self._action_to_keypress = {
             0: 'K',
@@ -324,7 +319,7 @@ class TextWorldEnv(gym.Env):
             self._update_scores()
             self._split_times += 1
         except:
-            print('Something went wrong with split and replace.\n')
+            print('Something went wrong with split and rephrase.\n')
         return
 
     def reset(self, sequential=False):
@@ -375,7 +370,7 @@ class TextWorldEnv(gym.Env):
         elif action == 'L': #'Lexical Simplification' 
             self._simplify_words()
             cost = 0
-        elif action == 'S': #'Syntactic Simplification' 
+        elif action == 'S': #'Split-and-Rephrase' 
             self._split_and_replace_text()
             cost = 0
         #Calculate action reward and get latest info
@@ -438,30 +433,3 @@ if __name__ == "__main__":
                         world.reset()
                 except: 
                     pass 
-
-#Replay code idea from https://colab.research.google.com/github/tensorflow/agents/blob/master/docs/tutorials/1_dqn_tutorial.ipynb#scrollTo=owOVWB158NlF
-'''
-def create_policy_eval_video(policy, filename, num_episodes=5, fps=30):
-  filename = filename + ".mp4"
-  with imageio.get_writer(filename, fps=fps) as video:
-    for _ in range(num_episodes):
-      time_step = eval_env.reset()
-      video.append_data(eval_py_env.render())
-      while not time_step.is_last():
-        action_step = policy.action(time_step)
-        time_step = eval_env.step(action_step.action)
-        video.append_data(eval_py_env.render())
-  return embed_mp4(filename)
-
-create_policy_eval_video(agent.policy, "trained-agent")
-'''
-
-# If using Gramformer ... 
-#    def _correct_grammar(self): 
-#        # REF: https://github.com/PrithivirajDamodaran/Gramformer/
-#        corrected = GF.correct(self._word_text,max_candidates=1)
-#        self._word_text = next(iter(corrected))
-#        self._reset_word_list_from_text()
-#        self._word_cursor = 0 #make sure not out of range
-#        return
-

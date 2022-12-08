@@ -1,6 +1,6 @@
-# Multi-Step Text Simplification with Reinforcement Learning
+# Edit-Based Text Simplification with Reinforcement Learning
 
-We built a Text Simplification game that can be mastered by a Reinforcement Learning agent. The game player moves a word cursor through a text, using keyboard commands to choose simplifying actions or word deletions. Simplifying actions are executed by traditional NLP or large language model tools. The player's score is based on a combination of final text simplicity and semantic preservation vis-a-vis the original text. We use OpenAI Gym to define a custom reinforcement learning environment based on the game. Python and PyTorch are used to train an RL agent to master the game. We use DQN RL policy.  
+We built a Text Simplification game that can be played by a Reinforcement Learning agent. The game player moves a word cursor through a text, using keyboard commands to choose simplifying actions or word deletions. Simplifying actions are executed with assistance from fine-tuned large language models. The player's score is based on a combination of final text simplicity and semantic preservation vis-a-vis the original text. The game is built in PyGame and we use OpenAI Gym to define a custom reinforcement learning environment. Python and PyTorch are used to train an RL agent to play the game. We use a simplified DQN RL architecture (no convolution layers in the policy network).
 
 ## The Game
 
@@ -9,14 +9,18 @@ Python code for the game and OpenAI Gym environment is in ./gyms/gyms/env/text_w
 ![alt text](game.png)
 
 You can simplify the text using the following keyboard commands (all caps): 
-  "L" - move word cursor left
-  "R" - move word cursor right
-  "D" - drop current word
-  "S" - try to simplify current word
-  "B" - try to break up long sentences
-  "Q" - quit game
+  "S" - Split-and-Rephrase (Structural simplification)
+  "L" - Simplify Words (Lexical Simplification)
+  "D" - Drop current word - only allowed if game deems the result grammatical
+  "K" - Keep current word
 
-The original texts presented by the game are drawn randomly from the 2,000 item validation set of the ASSET Corpus: https://github.com/facebookresearch/asset. Any other corpus can easily be used.
+Split-and-Rephrase is a sentence splitting operation first outlined by Narayan et al (2017) and later built upon in the work of Zhang et al (2020). Our implementation uses a GPT-3 fine-tuned on Zhang's Wiki-BM corpus. This operation turned out to be highly effective at lowering simlicity scores while preserving semantics.
+
+To implement Lexical Simplification, we fine-tuned GPT-3 on a subset of TurkCorpus. We think our implementation of Lexical Simplification leaves room for improvement in future iterations. 
+
+We implemented Drop Word on a token-by-token basis, with grammar checking performed by a large language model we trained on the Corpus of Linguistic Acceptability (Warstadt et al, 2019). We felt this is a plausible operation to implement at a word level, but we have leared that even the dropping of individual words is significantly dependent on the context of the entire sentence. Drop Word could be improved even if just tuples or triples of words are considered at once, or a "Drop Phrase" action were added. In general, we have learned word dropping like Split-and-Rephrase and Lexical Simplification, is probably best performed by a large language model in the context of an entire sentence or text. 
+
+Original texts presented by the game are drawn randomly from the 2,000 item validation set of the ASSET Corpus: https://github.com/facebookresearch/asset (Manchego et al, 2018). Other corpora can easily be used. The game uses texts from the file gametexts.json. 
 
 Game scores are described in greater detail below. The objective is to increase the score as compared to the original text score. The final text score minus the original text score is the reward. A positive reward should indicate that the text has been simplified while adequately preserving semantics. The player is rewarded for simplicity and penalized for semantic drift.
 
@@ -61,12 +65,9 @@ Secrets (i.e., huggingface token, openai api key) are to be stored as environmen
 
 I would encourage you to create a .env file that is written such that 'source .env' will make all the needed initializations.
 
-Also: in my .env file I have included the shell code that is required to download the Spacy language model. 
-
 Here is an example written in a way that is compatible with MacOS/zsh: 
 
 ```sh
-export TOKENIZERS_PARALLELISM=False
 export HF_TOKEN='putyourhugginfacetokenhere'
 export OPENAI_API_KEY='putyouropenaiapikeyhere'
 ```
@@ -76,19 +77,19 @@ You can then use your .env file to complete setup:
 ```sh
 source .env
 ```
-## Human-Level Performance Baseline
+## Results
 
-The ASSET Corpus provides us with 10 human-generated simplifications for each example in the validation set. Using this data we have started to examine how human simplifications tend to affect text metrics for simplicity and semantic preservation. We will use this analysis to inform the construction and refinement of an appropriate "score" and reward function. 
+A more in-depth explanation of the project and preliminary results can be seen in the file CS230_2022_Final_Project FINAL.pdf. 
 
-### Simplicity
+### A Word About Simplicity
 
 For simplicity, one measure we have examined is the widely used Flesch-Kincaid Grade Level score (FKGL). For more about this score, see here -> https://en.wikipedia.org/wiki/Flesch–Kincaid_readability_tests#Flesch–Kincaid_grade_level
 
-The human-performed simplifications captured in the ASSET Corpus tend to lower FKGL scores- unless the original text already has very low scores. 
+The human-performed simplifications captured in the ASSET Corpus tend to lower FKGL scores, unless the original text already has very low scores. 
 
-The mean original text FKGL score was about 10. Human simplifications ranged from 7-9. GPT-3 davinci zero-shot simplification achieved 7, essentially indistinguishable from typical human-level performance on this measure. 
+The mean original text FKGL score was about 10. Human simplifications ranged from 7-9. One example GPT-3 davinci zero-shot simplification achieved 7, essentially indistinguishable from typical human-level performance on this measure. 
 
-Another measure we have examined is McAlpine EFLAW score. The mean original text McAlpine score was 26, while the human simplification means ranged from 16-24. GPT-3 davinci zero-shot achieved 22.  
+Another measure we have examined is McAlpine EFLAW score. The mean original text McAlpine score was 26, while the human simplification means ranged from 16-24. Our GPT-3 davinci zero-shot achieved 22.  
 
 Based on these statistics, for a medium-complexity text we believe targeting up to 5 FKGL points of improvement or 10 McAlpine points of improvement would represent strong performance compared with human averages. Fewer points of improvement will be possible on less complex texts.
 
@@ -98,12 +99,12 @@ The following charts illustrate the relationship between original text FKGL/McAl
 
 Ref: baseline.py 
 
-For our first iteration, we propose a composite simplicity score that is 
+For our first iteration of this game, we propose a composite simplicity score that is 
 (30-FKGL)+(70-McAlpine)/2
 
 A higher score is accorded to lower FKGL and McAlpine values, recognizing that roughly 5 points on FKGL is similar to 10 points on McAlpine. In this framework, roughly a maximum of 60 points is achievable for simplicity.
 
-For future work, it may be relevant to fit a second order polynomial to the FKGL and McAlpine simplification plots to reflect the fact that we should target smaller simplifications for texts that start with low scores. 
+For future work, it may be relevant to fit a second order polynomial to the FKGL and McAlpine simplification plots to reflect the fact that we should expect smaller simplifications for texts that start with low scores. 
 
 ### Semantic Preservation
 
@@ -112,84 +113,79 @@ To measure semantic preservation, we use a large language model (LLM) to create 
 Currently, we are using embeddings from OpenAI's babbage model. We have also examined using the following model from huggingface, which seemed to have reasonable performance: 
 sentence-transformers/all-MiniLM-L6-v2
 
-We are also interested in trying the simcse python package. More about SimCSE here:  
+We are also interested in trying the simcse Python package. More about SimCSE here:  
 
 https://arxiv.org/abs/2104.08821
 
 Based on the ASSET Corpus, human performance typically results in similarity scores in mid-90's after simplification. This is based on some preliminary data exploration, see the file baseline.py.   
 
 We propose a semantic preservation score that offsets simplification gains when similarity falls.
-  -100*(1-similarity)
+  100*(similarity-1)
 
-As we observe how the end-to-end model performs, we may want to examine this more closely. Intuitively, we may want to penalize semantic drift using an exponential function - it seems likely that semantic drift should get more expensive the further we stray from the original text. 
+We may want to examine this more closely. Intuitively, we may want to penalize semantic drift using an exponential function - it seems plausible that semantic drift should get more expensive the further we stray from the original text. 
 
 ## RL Model, Loss Function, Hyperparameters
 
 We built the game with a graphical user interface (GUI) for humans; however, the relevant game state is actually quite simple. (The GUI itself would be a far too complex way to convey state for this game.) 
 
-Today we convey game state to the RL agent using a simple 4-element array. The 4 elements are: selected word length, lemma length, number of word dependencies, and number of words in current sentence. We will probably also add a part of speech code. These values are readily calculated using the python Spacy NLP package.
+Today we convey game state to the RL agent using a simple state space that conveys easily calculated information about the current word and the whole text. Certain values are calculated using the Spacy NLP package. For details see the paper referenced above. With a simple state space and a simple action space, we can use a simple policy network.
 
-We have started end-to-end testing using a simplistic "dummy" RL model that consists of 4 inputs, a series of 32-node layers with Relu activations, and a 6 - action output layer corresponding to the six possible keyboard commands. The model is specified in the file rl_model.py. The agent and the training loop are in the file train.py.We will test out a simplistic model first, then consider improvements and elaborations. 
+As we built this game, we realized how important the context of the entire text (or, at least an entire sentence) is even when trying to accomplish **seemingly** word-level operations like "simplify word" and "drop word". 
 
-## Initial Results
+In the next iteration of the project, we would probably keep increasing the focus on sentence- or text-level state information and actions. Word-level actions are simply of limited utility. 
 
-We have been able to run the end-to-end system and show consistent learning progress of the agent. We have saved a neural network model that learned to improve score by +6 points on average over 100 games. One clear finding from reviewing results is that the agent relied excessively on a single discrete action to achieve simplification. The agent learned to repeatedly apply action "B" - 'try to break up long sentences'. The game performs this particular action using GPT-3 davinci using prompt "Split complex sentences into simple sentences." We think we can continue to improve the agent by getting it to learn additional actions, especially simple actions such as dropping or finding simpler alternatives for excessively long words. 
+An interesting text-level state space to construct would be an embedding vector that captures problematic, unclear, and ungrammatical style and fluency. An embedding vector like this could be useful in guiding the agent to choose simplifying actions.
 
-This is a very preliminary result and for future runs we will have better analysis of results. 
+# Credits
 
-# Credits (preliminary - more to come)
+The project builds on a large amount of research and toolkits created by very talented and dedicated people. For more details please see the paper linked above.
 
-## ASSET Corpus
-@inproceedings{alva-manchego-etal-2020-asset,
-    title = "{ASSET}: {A} Dataset for Tuning and Evaluation of Sentence Simplification Models with Multiple Rewriting Transformations",
-    author = "Alva-Manchego, Fernando  and
-      Martin, Louis  and
-      Bordes, Antoine  and
-      Scarton, Carolina  and
-      Sagot, Beno{\^\i}t  and
-      Specia, Lucia",
-    booktitle = "Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics",
-    month = jul,
-    year = "2020",
-    address = "Online",
-    publisher = "Association for Computational Linguistics",
-    url = "https://www.aclweb.org/anthology/2020.acl-main.424",
-    pages = "4668--4679",
-}
+Al-Thanyyan, S. S., & Azmi, A. M. (2021). Automated text simplification: a survey. ACM Computing Surveys (CSUR), 54(2), 1-36.
 
-## Deep Reinforcement Learning Hands-On
-Author: Maxim Lapan
-Publisher: Packt
-This book was helpful to get started creating a RL Agent and training loop that works together with an OpenAI Gym environment. 
+Alva-Manchego, F., Martin, L., Scarton, C., & Specia, L. (2019). EASSE: Easier automatic sentence simplification evaluation. arXiv preprint arXiv:1908.04567.
 
-## OpenAI
-Our current implementation is using OpenAI GPT-3 to search for synonyms and to break up complex sentences. 
-https://openai.com/api/
+Alva-Manchego, F., Martin, L., Bordes, A., Scarton, C., Sagot, B., & Specia, L. (2020). ASSET: A dataset for tuning and evaluation of sentence simplification models with multiple rewriting transformations. arXiv preprint arXiv:2005.00481.
 
-## OpenAI Gym
-@misc{1606.01540,
-  Author = {Greg Brockman and Vicki Cheung and Ludwig Pettersson and Jonas Schneider and John Schulman and Jie Tang and Wojciech Zaremba},
-  Title = {OpenAI Gym},
-  Year = {2016},
-  Eprint = {arXiv:1606.01540},
-}
+Alva-Manchego, F., Scarton, C., & Specia, L. (2021). The (un) suitability of automatic evaluation metrics for text simplification. Computational Linguistics, 47(4), 861-889.
 
-## spaCy
-cff-version: 1.2.0
-preferred-citation:
-  type: article
-  message: "If you use spaCy, please cite it as below."
-  authors:
-  - family-names: "Honnibal"
-    given-names: "Matthew"
-  - family-names: "Montani"
-    given-names: "Ines"
-  - family-names: "Van Landeghem"
-    given-names: "Sofie"
-  - family-names: "Boyd"
-    given-names: "Adriane"
-  title: "spaCy: Industrial-strength Natural Language Processing in Python"
-  doi: "10.5281/zenodo.1212303"
-  year: 2020
+Brockman, G., Cheung, V., Pettersson, L., Schneider, J., Schulman, J., Tang, J., & Zaremba, W. (2016). Openai gym. arXiv preprint arXiv:1606.01540.
 
+Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J. D., Dhariwal, P., ... & Amodei, D. (2020). Language models are few-shot learners. Advances in neural information processing systems, 33, 1877-1901.
 
+Honnibal, M., Montani, I., Van Landeghem, S., Boyd, A. (2020). spaCy: Industrial-strength Natural Language Processing in Python. 
+
+Huang, S., Dossa, R. F. J., Ye, C., & Braga, J. (2021). CleanRL: High-quality Single-file Implementations of Deep Reinforcement Learning Algorithms. arXiv preprint arXiv:2111.08819.
+
+Kumar, D., Mou, L., Golab, L., & Vechtomova, O. (2020). Iterative edit-based unsupervised sentence simplification. arXiv preprint arXiv:2006.09639.
+
+Lapan, M. (2020) Deep Reinforcement Learning Hands-On. Packt Publishing.
+
+Kincaid, J. P., Fishburne Jr, R. P., Rogers, R. L., & Chissom, B. S. (1975). Derivation of new readability formulas (automated readability index, fog count and flesch reading ease formula) for navy enlisted personnel. Naval Technical Training Command Millington TN Research Branch.
+
+McAlpine, Rachel. (1997). Global English for global business. Longman.
+
+Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A. A., Veness, J., Bellemare, M. G., ... & Hassabis, D. (2015). Human-level control through deep reinforcement learning. nature, 518(7540), 529-533.
+
+Nakamachi, A., Kajiwara, T., & Arase, Y. (2020, December). Text Simplification with Reinforcement Learning Using Supervised Rewards on Grammaticality, Meaning Preservation, and Simplicity. In Proceedings of the 1st Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 10th International Joint Conference on Natural Language Processing: Student Research Workshop (pp. 153-159).
+
+Napoles, C., Sakaguchi, K., & Tetreault, J. (2017). JFLEG: A fluency corpus and benchmark for grammatical error correction. arXiv preprint arXiv:1702.04066.
+
+Narayan, S., Gardent, C., Cohen, S. B., & Shimorina, A. (2017). Split and rephrase. arXiv preprint arXiv:1707.06971.
+
+Paszke, A., Gross, S., Massa, F., Lerer, A., Bradbury, J., Chanan, G., ... & Chintala, S. (2019). Pytorch: An imperative style, high-performance deep learning library. Advances in neural information processing systems, 32.
+
+Shardlow, M. (2014). A survey of automated text simplification. International Journal of Advanced Computer Science and Applications, 4(1), 58-70.
+
+Van, H., Tang, Z., & Surdeanu, M. (2021). How May I Help You? Using Neural Text Simplification to Improve Downstream NLP Tasks. arXiv preprint arXiv:2109.04604.
+
+Warstadt, A., Singh, A., & Bowman, S. R. (2019). Cola: The corpus of linguistic acceptability (with added annotations).
+
+Xu, W., Napoles, C., Pavlick, E., Chen, Q., & Callison-Burch, C. (2016). Optimizing statistical machine translation for text simplification. Transactions of the Association for Computational Linguistics, 4, 401-415.
+
+Yanamoto, D., Ikawa, T., Kajiwara, T., Ninomiya, T., Uchida, S., & Arase, Y. (2022, November). Controllable Text Simplification with Deep Reinforcement Learning. In Proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 12th International Joint Conference on Natural Language Processing (pp. 398-404).
+
+Zhang, X., & Lapata, M. (2017). Sentence simplification with deep reinforcement learning. arXiv preprint arXiv:1703.10931.
+
+Zhang, L., Zhu, H., Brahma, S., & Li, Y. (2020). Small but mighty: New benchmarks for split and rephrase. arXiv preprint arXiv:2009.08560.
+
+Zhao, S., Meng, R., He, D., Andi, S., & Bambang, P. (2018). Integrating transformer and paraphrase rules for sentence simplification. arXiv preprint arXiv:1810.11193.
